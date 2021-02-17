@@ -155,7 +155,15 @@ const char *consumeOp(const char *s, int *op) {
  *   nothing
  */
 void stackPush(long stack[], long *count, long val) {
-  /* TODO: implement */
+  char *msg = "Too much element's in the stack currently";
+
+  if(count >= 20) {
+          fatalError(msg);
+  }
+
+  free(msg);
+  stack[*count] = val;
+  count++;
 }
 
 /*
@@ -173,7 +181,18 @@ void stackPush(long stack[], long *count, long val) {
  *   the value popped from the stack
  */
 long stackPop(long stack[], long *count) {
-  /* TODO: implement */
+    char *msg = "No element's to get rid of in the stack currently";
+
+    if(count <= 0) {
+            fatalError(msg);
+    }
+
+    free(msg);
+
+    long tempReturnValue = stack[*count-1];
+
+    stack[*count-1] = NULL;
+    count--;
 }
 
 /*
@@ -188,5 +207,9 @@ long stackPop(long stack[], long *count) {
  *   the result of applying the operator to the operands
  */
 long evalOp(int op, long left, long right) {
-  /* TODO: implement */
+    return op == 43 ?
+               left + right : op == 45 ?
+                     left - right : op == 42 ?
+                            left * right : op == 47 ?
+                                   left / right : 0;
 }
