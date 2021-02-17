@@ -39,7 +39,7 @@ void fatalError(const char *msg) {
  *   spaces and tabs)
  */
 int isSpace(int c) {
-	return (c == 20)||(c == 9);
+	return (c == 32)||(c == 9);
 }
 
 /*
@@ -119,7 +119,27 @@ int tokenType(const char *s) {
  *   pointer to the first character in the string that is not a digit
  */
 const char *consumeInt(const char *s, long *pval) {
+	int i, j;
 
+	i = 0;
+	j = 0;
+	pval[0] = 0;
+
+	//convert char to long
+	char charLibrary[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+
+	while(tokenType(s+i) == TOK_INT){
+		j = 0;
+
+		while(charLibrary[j] != s[i]){
+			j++;
+		}
+
+		pval[0] = pval[0]*10 + j;
+		i++;
+	}
+
+	return s+i;
 }
 
 /*
@@ -135,7 +155,10 @@ const char *consumeInt(const char *s, long *pval) {
  *   a pointer to the second character of s
  */
 const char *consumeOp(const char *s, int *op) {
-  /* TODO: implement */
+	
+	op[0] = (int)s[0];
+
+	return s+1;
 }
 
 /*
