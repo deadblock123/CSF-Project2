@@ -178,15 +178,14 @@ const char *consumeOp(const char *s, int *op) {
  *   nothing
  */
 void stackPush(long stack[], long *count, long val) {
-  char *msg = "Too much element's in the stack currently";
+  char msg[] = "Too many elements in the stack currently";
 
-  if(count >= 20) {
+  if(count >= MAX_STACK) {
           fatalError(msg);
   }
 
-  free(msg);
   stack[*count] = val;
-  count++;
+  count[0]++;
 }
 
 /*
@@ -204,13 +203,11 @@ void stackPush(long stack[], long *count, long val) {
  *   the value popped from the stack
  */
 long stackPop(long stack[], long *count) {
-    char *msg = "No element's to get rid of in the stack currently";
+    char msg[] = "No element's to get rid of in the stack currently";
 
     if(count <= 0) {
             fatalError(msg);
     }
-
-    free(msg);
 
     long tempReturnValue = stack[*count-1];
 
