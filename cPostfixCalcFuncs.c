@@ -22,7 +22,8 @@ long addPositive(long a, long b) {
  *   msg - description of the error which occurred
  */
 void fatalError(const char *msg) {
-  /* TODO: implement */
+   printf("Error: %s", msg);
+   exit(1);
 }
 
 /*
@@ -157,13 +158,13 @@ const char *consumeOp(const char *s, int *op) {
 void stackPush(long stack[], long *count, long val) {
   char *msg = "Too much element's in the stack currently";
 
-  if(count >= 20) {
+  if(*count >= 20) {
           fatalError(msg);
   }
 
-  free(msg);
   stack[*count] = val;
-  count++;
+  long sum = *count + 1;
+  *count = sum;
 }
 
 /*
@@ -183,16 +184,17 @@ void stackPush(long stack[], long *count, long val) {
 long stackPop(long stack[], long *count) {
     char *msg = "No element's to get rid of in the stack currently";
 
-    if(count <= 0) {
+    if(*count <= 0) {
             fatalError(msg);
     }
 
-    free(msg);
-
     long tempReturnValue = stack[*count-1];
-
     stack[*count-1] = NULL;
-    count--;
+
+    long difference = *count - 1;
+    *count = difference;
+
+    return tempReturnValue;
 }
 
 /*
