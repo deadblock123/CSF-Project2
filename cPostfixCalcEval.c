@@ -13,9 +13,52 @@
  *   the result of evaluating the expression
  */
 long eval(const char *s) {
-  /* TODO: implement */
+	long numberStack[MAX_STACK];
+	char *currentString;
+	long *count, *pval, left, right;
+	int *pOp;
 
-  /* Note: this function should be implemented by calling functions
-   * declared in cPostfixCalc.h and defined in cPostfixCalcFuncs.c
-   */
+	currentString = skipws(s);
+	count = (long *)malloc(sizeof(long));
+	pval = (long *)malloc(sizeof(long));
+	pOp = (int *)malloc(sizeof(int));
+
+	count[0] = 0;
+
+	if(currentString == NULL){
+		fatalError("Inputted string is empty.");
+	}
+
+	while(currentString != NULL){
+
+		if(tokenType(currentString) == TOK_INT){
+			currentString = consumeInt(currentString, pval);
+			stackPush(numberStack, count, pval[0]);	
+		}
+	
+		else if(tokenType(currentString) == TOK_OP){
+			currentString = consumeOp(currentString, pOp);
+			right = stackPop(numberStack, count);
+			left = stackPop(numberStack, count);
+			stackPush(numberStack, count, evalOp(pOp[0], left, right));
+		}
+	
+		else if(tokenType(currentString) == TOK_UNKNOWN){
+			fatalError("Inputted an invalid string.");
+		}
+
+		currentString = skipws(currentString);
+	}
+
+	if(count[0] == 1){
+		return stackPop(numberStack, count);
+	}
+
+	else if(count[0] > 1){
+		fatalError("Too many items in the stack.");
+	}
+
+	else if(count[0] == 0){
+		fatalError("No items in the stack.");
+	}
 }
