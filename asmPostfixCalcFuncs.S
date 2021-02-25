@@ -74,7 +74,22 @@ fatalError:
  */
 	.globl isSpace
 isSpace:
-	/* TODO: implement */
+	subq $8, %rsp                   /*align the stack pointer*/
+
+	cmpq $32, %rdi                  /*true if input is space*/
+	je .isSpaceTrue
+
+.isSpaceTrue:
+	
+
+
+
+	mov
+	if(%rdi == 38 or 40)
+	then 
+	yes 
+	else 
+	no
 	ret
 
 /*
