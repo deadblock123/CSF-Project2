@@ -11,8 +11,15 @@
 
 	.section .rodata
 
-eNegativeValue: .string "Negative value"
+eNegativeValue: .string "[Negative value], "
+eStackMax: .string "[Stack is full], "
+eStackMin: .string "[Stack is empty], "
+sError: .string "ERROR: %s"
+spaceArray: .string " "
+spaceArray2: .string "\t"
 
+         .section .bss
+num: .space 100
 /* TODO: add other string constants and other read-only data here */
 
 	.section .text
@@ -55,9 +62,16 @@ addPositive:
  */
 	.globl fatalError
 fatalError:
-	/* TODO: implement */
+        subq $8, %rsp                /* align stack pointer */
+        movq %rdi, %r10
+        movq $sError, %rdi
+        movq %r10, %rsi
+        call printf   
+
+        addq $8, %rsp
+        mov $1, %rdi
+        call exit
 	/* note that this function should not return */
-	ret
 
 /*
  * isSpace - tests a character code to determine whether or not it
@@ -74,23 +88,23 @@ fatalError:
  */
 	.globl isSpace
 isSpace:
-	subq $8, %rsp                   /*align the stack pointer*/
+        subq $8, %rsp
+	cmp $32, %rdi
+        je .LequalToSpace
+        cmp $9, %rdi
+        je .LequalToSpace
+        jmp .LnotEqualToSpace
+        
+.LequalToSpace:
+        movq $1, %rax
+	jmp .Lreturn
 
-	cmpq $32, %rdi                  /*true if input is space*/
-	je .isSpaceTrue
-
-.isSpaceTrue:
-	
-
-
-
-	mov
-	if(%rdi == 38 or 40)
-	then 
-	yes 
-	else 
-	no
-	ret
+.LnotEqualToSpace:
+        movq $0, %rax
+       
+.Lreturn: 
+        addq $8, %rsp
+        ret
 
 /*
  * isDigit - tests a character code to determine whether it is one
@@ -104,8 +118,27 @@ isSpace:
  */
 	.globl isDigit
 isDigit:
-	/* TODO: implement */
-	ret
+	subq $8, %rsp
+        cmp $58, %rdi
+        jl .LtestCase2
+        jmp .LnotADigit
+
+.LtestCase2:
+        cmp $47, %rdi
+        jg .LisADigit
+        jmp .LnotADigit
+
+.LisADigit:
+        movq $1, %rax
+        jmp .Lend
+
+.LnotADigit:
+        movq $0, %rax
+      
+.Lend:
+        addq $8, %rsp
+        ret
+      
 
 /*
  * skipws - skips any whitespace characters (as determined by isSpace)
@@ -121,7 +154,19 @@ isDigit:
  */
 	.globl skipws
 skipws:
-	/* TODO: implement */
+        subq $8, %rsp //align stack
+        movq $0, %r10 // counting variable
+	call isSpace // figure out if current string
+	cmpq $0, $eax // checks if isSpace returned 0 (not a space)
+ 	je .returnAddress
+	if true then r10++ and go back
+
+.returnAddress:
+        cmp $32, (%rdi)
+        jne .Lfinished
+        cmp $9, (%rdi)
+        jne .Lfinished
+        addq $8, (%rdi)
 	ret
 
 /*
@@ -137,8 +182,52 @@ skipws:
  */
 	.globl tokenType
 tokenType:
+        /*
+         * Argument Registers
+         * %rdi pointer to char pointer
+         */
 	/* TODO: implement */
-	ret
+        subq $8, %rsp
+        movb $0, %r10b
+        movb $0, %r11b
+
+        addb (%rdi), %r11b
+
+        cmpb $58, %r11b
+        jl .LsecondComparison
+        
+.LtopTwo:
+        cmpb $43, %r11b
+        je .LequalToOp
+        cmpb $45, %r11b
+        je .LequalToOp
+        cmpb $42, %r11b
+        je .LequalToOp
+        cmpb $47, %r11b
+        je .LequalToOp
+         
+        jmp .LequalToUnknown
+
+.LsecondComparison:
+        cmpb $47, %r11b
+        jg .LequalToDigit
+        jmp .LtopTwo
+
+.LequalToDigit:
+        movl $TOK_INT, %eax
+        jmp .LreturnStatement
+
+.LequalToOp:
+        movl $TOK_OP, %eax
+        jmp .LreturnStatement
+
+.LequalToUnknown:
+       movl $TOK_UNKNOWN, %eax
+      
+.LreturnStatement:
+       addq $8, %rsp 
+       ret
+   
 
 /*
  * consumeInt - consume one or more digit characters at the beginning
@@ -195,7 +284,35 @@ consumeOp:
  */
 	.globl stackPush
 stackPush:
-	/* TODO: implement */
+        /* Argument Registers
+         * %rdi -> stack - pointer to the stack storage array
+         * %rsi -> pointer counter of elements in the stack
+         * %rdx -> the value to push into the stack
+         */
+        subq $8, %rsp
+
+        movq (%rsi), %r10
+         
+        cmpq $20, %r10
+        jge .LcallFatalError
+
+        jmp .LstackPush
+
+.LcallFatalError:
+        movq $eStackMax, %rdi
+        call fatalError
+9:      jmp 9b
+
+.LstackPush:
+        movq %rdx, %r11
+        movq %r11, (%rdi, %r10, 8)
+       ; addq $8, %rdi
+
+        addq $1, %r10
+        movq %r10, (%rsi)
+
+        addq $8, %rsp
+
 	ret
 
 /*
@@ -213,8 +330,28 @@ stackPush:
  *   the value popped from the stack
  */
 	.globl stackPop
-stackPop:
-	/* TODO: implement */
+stackPop: 
+        subq $8, %rsp
+        
+        movq (%rsi), %r10 
+        cmp $0, %r10
+        jle .LcallFatalMinError
+  
+        jmp .LstackPop
+ 
+.LcallFatalMinError:
+        movq $eStackMin, %rdi
+        call fatalError
+9:      jmp 9b
+
+.LstackPop:
+        subq $1, %r10
+        movq %r10, (%rsi)
+ 
+        movq (%rdi, %r10, 8), %r11
+        movq %r11, %rax
+        
+        addq $8, %rsp
 	ret
 
 /*
