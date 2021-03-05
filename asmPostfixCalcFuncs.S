@@ -18,8 +18,10 @@ sError: .string "ERROR: %s"
 spaceArray: .string " "
 spaceArray2: .string "\t"
 
-         .section .bss
-num: .space 100
+charLibrary: .word 48, 49, 50, 51, 52, 53, 54, 55, 56, 57
+
+.section .bss
+
 /* TODO: add other string constants and other read-only data here */
 
 	.section .text
@@ -155,23 +157,24 @@ isDigit:
 	.globl skipws
 skipws:
         subq $8, %rsp
-       
-        movq $0, %r10
- 
+     
+        movq $0, %r11
+        
+.LwhileSpace:
+        cmpb $32, (%rdi, %r11, 1)
+        je .continueWhileLoop
+        cmpb $9, (%rdi, %r11, 1)
+        je .continueWhileLoop
+        jmp .finishedSkipws
 
-.Ltop:
-        cmp $32, (%rdi)
-        jne .Lfinished
-        cmp $9, (%rdi)
-        jne .Lfinished
-        addq $8, (%rdi)
+.continueWhileLoop:
+        addq $1, %rdi
+        jmp .LwhileSpace
 
-        jmp .Ltop
-
-.Lfinished:
+.finishedSkipws:
         movq %rdi, %rax
-        addq $8, %rsp         	
-	ret
+        addq $8, %rsp        
+        ret
 
 /*
  * tokenType - return the token type (TOK_INT, TOK_OP, or TOK_UNKNOWN)
@@ -250,7 +253,47 @@ tokenType:
  */
 	.globl consumeInt
 consumeInt:
-	/* TODO: implement */
+	subq $8, %rsp
+        movq $0, %r10
+        movq $0, (%rsi, %r10, 8)
+
+.LtopConsume:
+        movq (%rdi), %r11
+        call tokenType
+ 
+        cmp $TOK_INT, %rax
+        je .LisStillInt
+        jmp .LcompleteLoop
+
+.LisStillInt:
+        movq $0, %r10
+         
+.LwhileLoop:
+        cmpq $58, %r11
+        jle .LsecondCheck
+        jmp .LendOfWhileLoop
+
+.LsecondCheck:
+        cmpq $47, %r11
+        jge .LincrementThanWhileLoop
+        jmp .LendOfWhileLoop
+
+.LincrementThanWhileLoop:
+        incq %r10
+        jmp .LwhileLoop    
+
+.LendOfWhileLoop:    
+        movq (%rsi, %r10, 8), %rax
+        movq $10, %r11
+        mulq %r11
+        addq %r10, %rax
+        movq %rax, (%rsi, %r10, 8)
+        addq $1, %rdi
+        jmp .LtopConsume
+
+.LcompleteLoop:
+        movq %rdi, %rax
+        addq $8, %rsp
 	ret
 
 /*
@@ -259,7 +302,8 @@ consumeInt:
  *
  * Params:
  *   s - pointer to a nonempty C character string
- *   op - pointer to an int (32 bit signed integer) variable where the
+ *   op - pointer
+ to an int (32 bit signed integer) variable where the
  *        ASCII code of the first character of s should be stored
  *
  * Returns:
@@ -268,6 +312,16 @@ consumeInt:
 	.globl consumeOp
 consumeOp:
 	/* TODO: implement */
+        subq $8, %rsp
+        movq $0, %r10 
+          
+        movb (%rdi, %r10, 1), %r11b
+        movb %r11b, (%rsi, %r10, 1)
+        
+        addq $1, %rdi 
+        movq %rdi, %rax
+
+        addq $8, %rsp
 	ret
 
 /*
@@ -371,6 +425,45 @@ stackPop:
  */
 	.globl evalOp
 evalOp:
+        subq $8, %rsp
+
+        cmpl $43, %edi
+        je .LaddNumbers
+ 
+        cmpl $45, %edi
+        je .LsubtractNumbers
+
+        cmpl $42, %edi
+        je .LmultiplyNumbers
+       
+        cmpl $47, %edi
+        je .LdivideNumbers
+        jmp .LsumCalculated
+
+.LaddNumbers:
+        movq %rsi, %rax
+        addq %rdx, %rax
+        jmp .LsumCalculated
+
+.LsubtractNumbers:
+        movq %rsi, %rax
+        subq %rdx, %rax
+        jmp .LsumCalculated
+
+.LmultiplyNumbers:
+        movq %rsi, %rax
+        mulq %rdx
+        jmp .LsumCalculated
+
+.LdivideNumbers:
+        movq %rsi, %rax
+        movq %rdx, %r10
+        movq $0, %rdx
+        divq %r10
+        jmp .LsumCalculated
+
+.LsumCalculated:
+        addq $8, %rsp
 	ret
 
 /* vim:ft=gas:
