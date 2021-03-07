@@ -341,30 +341,28 @@ stackPush:
          * %rsi -> pointer counter of elements in the stack
          * %rdx -> the value to push into the stack
          */
-        subq $8, %rsp
+        subq $8, %rsp                /* align stack pointer*/
 
-        movq (%rsi), %r10
+        movq (%rsi), %r10            /* move pointer counter to r10*/
          
-        cmpq $20, %r10
-        jge .LcallFatalError
-
-        jmp .LstackPush
+        cmpq $20, %r10               /* find out if stack is full*/
+        jge .LcallFatalError         /* if yes, then call error*/
+        jmp .LstackPush              /* otherwise, proceed to the push*/
 
 .LcallFatalError:
-        movq $eStackMax, %rdi
-        call fatalError
-9:      jmp 9b
+        movq $eStackMax, %rdi        /* load appropriate message into first parameter*/
+        call fatalError              /* call error*/
+9:      jmp 9b                       /* should not reach here*/
 
 .LstackPush:
-        movq %rdx, %r11
-        movq %r11, (%rdi, %r10, 8)
+        movq %rdx, %r11              /* move the value that will be pushed to r11*/
+        movq %r11, (%rdi, %r10, 8)   /* push the value into index specified by ""count*/
        ; addq $8, %rdi
 
-        addq $1, %r10
-        movq %r10, (%rsi)
+        addq $1, %r10                /* increment count*/
+        movq %r10, (%rsi)            /* return count to the second parameter*/
 
-        addq $8, %rsp
-
+        addq $8, %rsp                /* fix stack pointer*/
 	ret
 
 /*
@@ -383,27 +381,26 @@ stackPush:
  */
 	.globl stackPop
 stackPop: 
-        subq $8, %rsp
+        subq $8, %rsp                    /* align stack pointer*/
         
-        movq (%rsi), %r10 
-        cmp $0, %r10
-        jle .LcallFatalMinError
-  
-        jmp .LstackPop
+        movq (%rsi), %r10                /* move count into t10*/
+        cmp $0, %r10                     /* check to see if stack is empty*/
+        jle .LcallFatalMinError          /* if empty, call error*/
+        jmp .LstackPop                   /* otherwise, proceed to the pop*/
  
 .LcallFatalMinError:
-        movq $eStackMin, %rdi
-        call fatalError
-9:      jmp 9b
+        movq $eStackMin, %rdi            /* load appropriate message into first parameter*/
+        call fatalError                  /* call error*/
+9:      jmp 9b                           /* should not be reached*/
 
 .LstackPop:
-        subq $1, %r10
-        movq %r10, (%rsi)
+        subq $1, %r10                    /* decrement the count*/
+        movq %r10, (%rsi)                /* return count to second parameter*/
  
-        movq (%rdi, %r10, 8), %r11
-        movq %r11, %rax
+        movq (%rdi, %r10, 8), %r11       /* get the final element in the stack and move it to r11*/
+        movq %r11, %rax                  /* move the final element in the stack to output*/
         
-        addq $8, %rsp
+        addq $8, %rsp                    /* fix stack pointer*/
 	ret
 
 /*
@@ -419,30 +416,30 @@ stackPop:
  */
 	.globl evalOp
 evalOp:
-        subq $8, %rsp
+        subq $8, %rsp                  /* align atack pointer*/
 
-        cmpl $43, %edi
+        cmpl $43, %edi                 /* checks if operation is a plus sign*/
         je .LaddNumbers
  
-        cmpl $45, %edi
+        cmpl $45, %edi                 /* checks if operation is a minus sign*/
         je .LsubtractNumbers
 
-        cmpl $42, %edi
+        cmpl $42, %edi                 /* checks if operation is a multiplication sign*/
         je .LmultiplyNumbers
        
-        cmpl $47, %edi
+        cmpl $47, %edi                 /* checks if the operation is a division sign*/
         je .LdivideNumbers
-        jmp .LsumCalculated
+        jmp .LsumCalculated            /* should not be reached*/
 
 .LaddNumbers:
-        movq %rsi, %rax
-        addq %rdx, %rax
-        jmp .LsumCalculated
+        movq %rsi, %rax                /* move left operand to output register*/
+        addq %rdx, %rax                /* add left operand with right and have result in output*/
+        jmp .LsumCalculated            /* complete function*/
 
 .LsubtractNumbers:
-        movq %rsi, %rax
-        subq %rdx, %rax
-        jmp .LsumCalculated
+        movq %rsi, %rax                /* move left operand to output register*/
+        subq %rdx, %rax                /* subtract right from left and have result in output*/
+        jmp .LsumCalculated            /* complete function*/
 
 .LmultiplyNumbers:
         movq %rsi, %rax

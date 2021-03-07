@@ -18,8 +18,6 @@ invalidString: .string "Inputted an invalid string."
 overflowStack: .string "Too many items in the stack."
 emptyStack: .string "No items in the stack."
 
-/* TODO: add string constants and other read-only data here */
-
 	.section .text
 
 /*
@@ -136,8 +134,8 @@ eval:
 
 .LendOfFunc:
 	cmp $1, %r14                /* checks if there is only one thing in the stack*/
-	jl .LoverflowStack          /* multiple things on stack, return error*/
-	jg .LemptyStack             /* nothing in stack, return error*/
+	jg .LoverflowStack          /* multiple things on stack, return error*/
+	jl .LemptyStack             /* nothing in stack, return error*/
 	                            /* if neither two are called, then we were given a valid string*/
 	movq %r13, %rdi             /* move stack pointer to first parameter*/
 	movq %r14, %rsi             /* move counter to second parameter*/
