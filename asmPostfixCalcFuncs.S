@@ -18,8 +18,10 @@ sError: .string "ERROR: %s"
 spaceArray: .string " "
 spaceArray2: .string "\t"
 
-         .section .bss
-num: .space 100
+charLibrary: .word 48, 49, 50, 51, 52, 53, 54, 55, 56, 57
+
+.section .bss
+
 /* TODO: add other string constants and other read-only data here */
 
 	.section .text
@@ -63,14 +65,14 @@ addPositive:
 	.globl fatalError
 fatalError:
         subq $8, %rsp                /* align stack pointer */
-        movq %rdi, %r10
-        movq $sError, %rdi
-        movq %r10, %rsi
-        call printf   
+        movq %rdi, %r10              /* move message to general purpose register*/
+        movq $sError, %rdi           /* move the error message template to first parameter register*/
+        movq %r10, %rsi              /* move error message to second parameter*/
+        call printf                  /* call print*/
 
-        addq $8, %rsp
-        mov $1, %rdi
-        call exit
+        addq $8, %rsp                /* restore stack pointer*/
+        mov $1, %rdi                 /* moving exit code 1 to first parameter*/
+        call exit                    /* call exit*/
 	/* note that this function should not return */
 
 /*
@@ -88,22 +90,22 @@ fatalError:
  */
 	.globl isSpace
 isSpace:
-        subq $8, %rsp
-	cmp $32, %rdi
-        je .LequalToSpace
-        cmp $9, %rdi
-        je .LequalToSpace
-        jmp .LnotEqualToSpace
+        subq $8, %rsp               /* Align stack pointer*/
+	cmp $32, %rdi               /* compares input to ascii value of space*/
+        je .LequalToSpace           /* jumps if input is equal to space*/
+        cmp $9, %rdi                /* compares input to ascii value of tab*/
+        je .LequalToSpace           /* jumps if input is equal to tab*/
+        jmp .LnotEqualToSpace	    /* if not equal to tab nor space, jump to end*/
         
 .LequalToSpace:
-        movq $1, %rax
-	jmp .Lreturn
+        movq $1, %rax              /* returns 1 since input is a space*/
+	jmp .Lreturn               /* jumps to end of function to return*/
 
 .LnotEqualToSpace:
-        movq $0, %rax
+        movq $0, %rax              /* returns 0 since input is not a space*/
        
 .Lreturn: 
-        addq $8, %rsp
+        addq $8, %rsp              /* restore stack pointer*/
         ret
 
 /*
@@ -118,25 +120,25 @@ isSpace:
  */
 	.globl isDigit
 isDigit:
-	subq $8, %rsp
-        cmp $58, %rdi
-        jl .LtestCase2
-        jmp .LnotADigit
+	subq $8, %rsp               /* align stack pointer*/
+        cmp $58, %rdi               /* compares input to smallest value that is definitly not a number (9 is 57 in ascii)*/
+        jl .LtestCase2              /* jumps becaus input may be a number*/
+        jmp .LnotADigit             /* jumps because input may not be a number*/
 
 .LtestCase2:
-        cmp $47, %rdi
-        jg .LisADigit
-        jmp .LnotADigit
+        cmp $47, %rdi               /* compares input to the largest value that is definitly not a number (o is 48 in ascii)*/
+        jg .LisADigit               /* if between 58 and 47 then definitly a number*/
+        jmp .LnotADigit             /* otherwise not a number*/
 
 .LisADigit:
-        movq $1, %rax
-        jmp .Lend
+        movq $1, %rax               /* outputs 1 for number*/
+        jmp .Lend                   /* returns function*/
 
 .LnotADigit:
-        movq $0, %rax
+        movq $0, %rax              /* outputs 0 because not a function*/
       
 .Lend:
-        addq $8, %rsp
+        addq $8, %rsp              /* restores stack pointer*/
         ret
       
 
@@ -154,20 +156,24 @@ isDigit:
  */
 	.globl skipws
 skipws:
-        subq $8, %rsp //align stack
-        movq $0, %r10 // counting variable
-	call isSpace // figure out if current string
-	cmpq $0, $eax // checks if isSpace returned 0 (not a space)
- 	je .returnAddress
-	if true then r10++ and go back
+        subq $8, %rsp                /* align stack pointer*/
+        movq $0, %r11                /* initialize r10 as an index variable*/
+ 
+.LwhileSpace:
+        cmp $32,(%rdi, %r11, 1)      /* checks if we are pointing to a space char*/
+        je .continueWhileLoop        /* if yes then continue the loop*/
+        cmp $9, (%rdi, %r11, 1)      /* checks if we are pointing to a tab char*/
+        je .continueWhileLoop        /* if yes then continue the loop*/
+        jmp .finishedSkipws          /* we have found a non space char*/
 
-.returnAddress:
-        cmp $32, (%rdi)
-        jne .Lfinished
-        cmp $9, (%rdi)
-        jne .Lfinished
-        addq $8, (%rdi)
-	ret
+.continueWhileLoop:
+        addq $1, %r10                /* increase index by 1*/
+        jmp .LwhileSpace             /* jump back to loop*/
+
+.finishedSkipws:
+        movq %rdi, %rax               /* return pointer to non space char*/
+        addq $8, %rsp                /* fix stack pointer*/
+        ret
 
 /*
  * tokenType - return the token type (TOK_INT, TOK_OP, or TOK_UNKNOWN)
@@ -182,13 +188,8 @@ skipws:
  */
 	.globl tokenType
 tokenType:
-        /*
-         * Argument Registers
-         * %rdi pointer to char pointer
-         */
-	/* TODO: implement */
-        subq $8, %rsp
-        movb $0, %r10b
+        subq $8, %rsp             /* align stack pointer*/
+        movb $0, %r10b            
         movb $0, %r11b
 
         addb (%rdi), %r11b
@@ -246,7 +247,47 @@ tokenType:
  */
 	.globl consumeInt
 consumeInt:
-	/* TODO: implement */
+	subq $8, %rsp
+        movq $0, %r10
+        movq $0, (%rsi, %r10, 8)
+
+.LtopConsume:
+        movq (%rdi), %r11
+        call tokenType
+ 
+        cmp $TOK_INT, %rax
+        je .LisStillInt
+        jmp .LcompleteLoop
+
+.LisStillInt:
+        movq $0, %r10
+         
+.LwhileLoop:
+        cmpq $58, %r11
+        jle .LsecondCheck
+        jmp .LendOfWhileLoop
+
+.LsecondCheck:
+        cmpq $47, %r11
+        jge .LincrementThanWhileLoop
+        jmp .LendOfWhileLoop
+
+.LincrementThanWhileLoop:
+        incq %r10
+        jmp .LwhileLoop    
+
+.LendOfWhileLoop:    
+        movq (%rsi, %r10, 8), %rax
+        movq $10, %r11
+        mulq %r11
+        addq %r10, %rax
+        movq %rax, (%rsi, %r10, 8)
+        addq $1, %rdi
+        jmp .LtopConsume
+
+.LcompleteLoop:
+        movq %rdi, %rax
+        addq $8, %rsp
 	ret
 
 /*
@@ -255,7 +296,8 @@ consumeInt:
  *
  * Params:
  *   s - pointer to a nonempty C character string
- *   op - pointer to an int (32 bit signed integer) variable where the
+ *   op - pointer
+ to an int (32 bit signed integer) variable where the
  *        ASCII code of the first character of s should be stored
  *
  * Returns:
@@ -264,6 +306,16 @@ consumeInt:
 	.globl consumeOp
 consumeOp:
 	/* TODO: implement */
+        subq $8, %rsp
+        movq $0, %r10 
+          
+        movb (%rdi, %r10, 1), %r11b
+        movb %r11b, (%rsi, %r10, 1)
+        
+        addq $1, %rdi 
+        movq %rdi, %rax
+
+        addq $8, %rsp
 	ret
 
 /*
@@ -367,6 +419,45 @@ stackPop:
  */
 	.globl evalOp
 evalOp:
+        subq $8, %rsp
+
+        cmpl $43, %edi
+        je .LaddNumbers
+ 
+        cmpl $45, %edi
+        je .LsubtractNumbers
+
+        cmpl $42, %edi
+        je .LmultiplyNumbers
+       
+        cmpl $47, %edi
+        je .LdivideNumbers
+        jmp .LsumCalculated
+
+.LaddNumbers:
+        movq %rsi, %rax
+        addq %rdx, %rax
+        jmp .LsumCalculated
+
+.LsubtractNumbers:
+        movq %rsi, %rax
+        subq %rdx, %rax
+        jmp .LsumCalculated
+
+.LmultiplyNumbers:
+        movq %rsi, %rax
+        mulq %rdx
+        jmp .LsumCalculated
+
+.LdivideNumbers:
+        movq %rsi, %rax
+        movq %rdx, %r10
+        movq $0, %rdx
+        divq %r10
+        jmp .LsumCalculated
+
+.LsumCalculated:
+        addq $8, %rsp
 	ret
 
 /* vim:ft=gas:
