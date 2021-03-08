@@ -157,21 +157,21 @@ isDigit:
 	.globl skipws
 skipws:
         subq $8, %rsp                /* align stack pointer*/
-        movq $0, %r11                /* initialize r10 as an index variable*/
- 
+        movq $0, %r11                /* initialize r11 as an index variable*/
+
 .LwhileSpace:
-        cmp $32,(%rdi, %r11, 1)      /* checks if we are pointing to a space char*/
+        cmpb $32,(%rdi, %r11, 1)     /* checks if we are pointing to a space char*/
         je .continueWhileLoop        /* if yes then continue the loop*/
-        cmp $9, (%rdi, %r11, 1)      /* checks if we are pointing to a tab char*/
+        cmpb $9, (%rdi, %r11, 1)     /* checks if we are pointing to a tab char*/
         je .continueWhileLoop        /* if yes then continue the loop*/
         jmp .finishedSkipws          /* we have found a non space char*/
 
 .continueWhileLoop:
-        addq $1, %r10                /* increase index by 1*/
+        addq $1, %rdi                /* increase index by 1*/
         jmp .LwhileSpace             /* jump back to loop*/
 
 .finishedSkipws:
-        movq %rdi, %rax               /* return pointer to non space char*/
+	movq %rdi, %rax              /* move current string to output register*/
         addq $8, %rsp                /* fix stack pointer*/
         ret
 
@@ -305,7 +305,6 @@ consumeInt:
  */
 	.globl consumeOp
 consumeOp:
-	/* TODO: implement */
         subq $8, %rsp
         movq $0, %r10 
           
@@ -319,7 +318,8 @@ consumeOp:
 	ret
 
 /*
- * stackPush - push a long (64 bit signed integer) value onto the stack.
+ * stackPush - 
+push a long (64 bit signed integer) value onto the stack.
  * Calls the fatalError function if the stack is full.
  * A full stack contains MAX_STACK (20) values.
  * If a value is successfully pushed on the stack, the count should
@@ -442,19 +442,19 @@ evalOp:
         jmp .LsumCalculated            /* complete function*/
 
 .LmultiplyNumbers:
-        movq %rsi, %rax
-        mulq %rdx
-        jmp .LsumCalculated
+        movq %rsi, %rax                /* move left operand to output register*/
+        mulq %rdx                      /* multiply right and left and have result in output*/
+        jmp .LsumCalculated            /* complete function */
 
 .LdivideNumbers:
-        movq %rsi, %rax
-        movq %rdx, %r10
-        movq $0, %rdx
-        divq %r10
-        jmp .LsumCalculated
+        movq %rsi, %rax                /* move left operand to output register*/
+        movq %rdx, %r10                /* move right operand to r10*/
+        movq $0, %rdx                  /* third parameter is equal to 0*/
+        divq %r10                      /* divide left operand by right operand and store in output*/
+        jmp .LsumCalculated            /* complete function*/
 
 .LsumCalculated:
-        addq $8, %rsp
+        addq $8, %rsp                  /* restore stack pointer*/
 	ret
 
 /* vim:ft=gas:
