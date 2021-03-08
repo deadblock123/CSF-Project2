@@ -164,11 +164,18 @@ skipws:
         je .continueWhileLoop        /* if yes then continue the loop*/
         cmpb $9, (%rdi, %r11, 1)     /* checks if we are pointing to a tab char*/
         je .continueWhileLoop        /* if yes then continue the loop*/
+	cmpb $0, (%rdi, %r11, 1)     /* checks if we have reached end of string*/
+	je .noNoneSpace
         jmp .finishedSkipws          /* we have found a non space char*/
 
 .continueWhileLoop:
         addq $1, %rdi                /* increase index by 1*/
         jmp .LwhileSpace             /* jump back to loop*/
+
+.noNoneSpace:
+	movq $0, %rax                /* make output equal to null*/
+	addq $8, %rsp                /* fix stack pointer*/
+        ret
 
 .finishedSkipws:
 	movq %rdi, %rax              /* move current string to output register*/
