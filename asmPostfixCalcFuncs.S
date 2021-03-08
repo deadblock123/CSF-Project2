@@ -255,47 +255,49 @@ tokenType:
 	.globl consumeInt
 consumeInt:
 	subq $8, %rsp
-        movq $0, %r10
-        movq $0, (%rsi, %r10, 8)
+	movq $0, %r10
+	movq $0, %r11
+	movq $0, %r12
+	movq $0, %r13
+	movq $0, (%rsi, %r12, 8)
 
-.LtopConsume:
-        movq (%rdi), %r11
-        call tokenType
- 
-        cmp $TOK_INT, %rax
-        je .LisStillInt
-        jmp .LcompleteLoop
+.LcheckIfNumber:
+	cmpb $58, (%rdi, %r12, 1)
+	jl .LsecondConsumeIntComparison
+	jmp .Lfinished	
 
-.LisStillInt:
-        movq $0, %r10
-         
-.LwhileLoop:
-        cmpq $58, %r11
-        jle .LsecondCheck
-        jmp .LendOfWhileLoop
+.LsecondConsumeIntComparison:
+	cmpb $47, (%rdi, %r12, 1)
+	jg .LcontinueWhileLoop
+	jmp .Lfinished
 
-.LsecondCheck:
-        cmpq $47, %r11
-        jge .LincrementThanWhileLoop
-        jmp .LendOfWhileLoop
+.LcontinueWhileLoop:
+	movq $0, %r11
+	movb $48, %r13b
 
-.LincrementThanWhileLoop:
-        incq %r10
-        jmp .LwhileLoop    
+.LsecondWhileLoop:
+	cmpb %r13b, (%rdi, %r12, 1)
+	jne .Lincrement
+	movq (%rsi, %r12, 8), %rax
+	movq $10, %r12
+	mulq %r12
+	movq $0, %r12
+	movq %rax, (%rsi, %r12, 8)
 
-.LendOfWhileLoop:    
-        movq (%rsi, %r10, 8), %rax
-        movq $10, %r11
-        mulq %r11
-        addq %r10, %rax
-        movq %rax, (%rsi, %r10, 8)
-        addq $1, %rdi
-        jmp .LtopConsume
+	subq $48, %r13
+	addq %r13, (%rsi, %r12, 8)
+	addq $1, %rdi
+	jmp .LcheckIfNumber
 
-.LcompleteLoop:
-        movq %rdi, %rax
-        addq $8, %rsp
+.Lincrement:
+	incb %r13b
+	jmp .LsecondWhileLoop
+
+.Lfinished:
+	movq %rdi, %rax
+	addq $8, %rsp
 	ret
+
 
 /*
  * consumeOp - consume an operator character from the beginning of the
