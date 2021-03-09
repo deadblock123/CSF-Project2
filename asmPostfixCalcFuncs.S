@@ -196,17 +196,17 @@ skipws:
 	.globl tokenType
 tokenType:
         subq $8, %rsp             /* align stack pointer*/
-        movb $0, %r10b            
-        movb $0, %r11b
+        movb $0, %r10b            /* set char r10b to 0 or null */
+        movb $0, %r11b            /* set char r11b to 0 or null */
 
-        addb (%rdi), %r11b
+        addb (%rdi), %r11b        /* add the array[0] of the nonempty character string to the character */
 
-        cmpb $58, %r11b
+        cmpb $58, %r11b           /* Compare the character to see if it's less then 58 if it is continue */
         jl .LsecondComparison
         
 .LtopTwo:
-        cmpb $43, %r11b
-        je .LequalToOp
+        cmpb $43, %r11b  /* Compares the characters to each possible op 43, +, 45, -, 42, *, and 47, */
+        je .LequalToOp   /* If it is then it is equal to an op */
         cmpb $45, %r11b
         je .LequalToOp
         cmpb $42, %r11b
@@ -214,26 +214,26 @@ tokenType:
         cmpb $47, %r11b
         je .LequalToOp
          
-        jmp .LequalToUnknown
+        jmp .LequalToUnknown /* Otherwise that one is unknown and move on down to replace the return variable to TOK_UNK */
 
 .LsecondComparison:
-        cmpb $47, %r11b
-        jg .LequalToDigit
+        cmpb $47, %r11b /* Compare to see if it's greater than 47 if it is the it is a TOK_INT */
+        jg .LequalToDigit /* Jump to it being equal to a digit */
         jmp .LtopTwo
 
 .LequalToDigit:
-        movl $TOK_INT, %eax
+        movl $TOK_INT, %eax /* Means return Token Int */
         jmp .LreturnStatement
 
 .LequalToOp:
-        movl $TOK_OP, %eax
+        movl $TOK_OP, %eax /* Means return Token Op */
         jmp .LreturnStatement
 
 .LequalToUnknown:
-       movl $TOK_UNKNOWN, %eax
+       movl $TOK_UNKNOWN, %eax /* Means return Token Unknown */
       
 .LreturnStatement:
-       addq $8, %rsp 
+       addq $8, %rsp /* realign stack pointer to ret correctly */
        ret
    
 
@@ -254,48 +254,49 @@ tokenType:
  */
 	.globl consumeInt
 consumeInt:
-	subq $8, %rsp
-	movq $0, %r10
+	subq $8, %rsp /* Align stack pointer */
+	movq $0, %r10 /* Initialize registers in order to refer to them later on */
 	movq $0, %r11
 	movq $0, %r12
 	movq $0, %r13
-	movq $0, (%rsi, %r12, 8)
+	movq $0, (%rsi, %r12, 8) /* Set the variable equal to 0 */
 
 .LcheckIfNumber:
-	cmpb $58, (%rdi, %r12, 1)
-	jl .LsecondConsumeIntComparison
+	cmpb $58, (%rdi, %r12, 1) /* Compare the variables to see if it's equal to an int if it isn't an int get rid of it, finish the loop, simply just a checker for the loop */
+	jl .LsecondConsumeIntComparison /* If it is go to the second check */
 	jmp .Lfinished	
 
 .LsecondConsumeIntComparison:
-	cmpb $47, (%rdi, %r12, 1)
-	jg .LcontinueWhileLoop
-	jmp .Lfinished
+	cmpb $47, (%rdi, %r12, 1) /* Compare the variables to see if it's equal to an int if it isn't an int get rid of it, finish the loop, simply just a checker for the loop */
+	jg .LcontinueWhileLoop /* If it is go to the continue you are set to continue on with the comparison */
+	jmp .Lfinished /* Finish interem jump and complete the loop */
 
 .LcontinueWhileLoop:
-	movq $0, %r11
-	movb $48, %r13b
+	movq $0, %r11 /* reset the register in order to start counting again */
+	movb $48, %r13b /* start at 48 in order to get the digit properly from the character, remember char - 48 = the corresponding digit if it is a digit */
 
 .LsecondWhileLoop:
-	cmpb %r13b, (%rdi, %r12, 1)
-	jne .Lincrement
-	movq (%rsi, %r12, 8), %rax
-	movq $10, %r12
+	cmpb %r13b, (%rdi, %r12, 1) /* compare to see what the character is for %r13b in order to increase and completely move and traverse through the array slowly */
+	jne .Lincrement /* If it isn't keep continuing on */
+	movq (%rsi, %r12, 8), %rax /* return the new variable */
+	movq $10, %r12 /* Multiply the %rax by %r12, getting the new variable corresponding to the number grabbed and increment the value already in there by 10 in order to read it correctly*/
 	mulq %r12
-	movq $0, %r12
-	movq %rax, (%rsi, %r12, 8)
-
-	subq $48, %r13
-	addq %r13, (%rsi, %r12, 8)
-	addq $1, %rdi
-	jmp .LcheckIfNumber
+	movq $0, %r12 /* Reset r12 in order to use it later on */
+	movq %rax, (%rsi, %r12, 8) /* move the value new %rax into the long variable */
+ 
+	subq $48, %r13 /* get the number of the new int and add it to the value of the multiplied %rax */
+                       /* If you got 17 -> it would read the one first, [1], then multiply that by 10, [10], and then add the 7 [17] */
+	addq %r13, (%rsi, %r12, 8) 
+	addq $1, %rdi /* Add 1 to the rdi to check to see if you should continue with reading in the character string for multiple digits */
+	jmp .LcheckIfNumber /* If not then you obviously have to go through this loop again with an increment ot %r13 because %r13 isn't equal to the values given */
 
 .Lincrement:
-	incb %r13b
+	incb %r13b /* Continue moving with r13 to check which character it is */
 	jmp .LsecondWhileLoop
 
 .Lfinished:
-	movq %rdi, %rax
-	addq $8, %rsp
+	movq %rdi, %rax /* return the new string variable with the cut integer */
+	addq $8, %rsp /* realign stack pointer */
 	ret
 
 
