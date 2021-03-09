@@ -314,16 +314,15 @@ consumeInt:
  */
 	.globl consumeOp
 consumeOp:
-        subq $8, %rsp
-        movq $0, %r10 
+        subq $8, %rsp                   /* align stack pointer*/
           
-        movb (%rdi, %r10, 1), %r11b
-        movb %r11b, (%rsi, %r10, 1)
+        movb 0(%rdi), %r11b             /* first character moved to r11b*/
+        movb %r11b, 0(%rsi)             /* move first character to first byte of rsi*/
         
-        addq $1, %rdi 
-        movq %rdi, %rax
+        addq $1, %rdi                   /* delete first char in inputted string*/
+        movq %rdi, %rax                 /* move new string to output*/
 
-        addq $8, %rsp
+        addq $8, %rsp                   /* fix stack pointer*/
 	ret
 
 /*
